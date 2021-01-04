@@ -1,0 +1,137 @@
+(* FabCar contract *)
+
+(***************************************************)
+(*                 Scilla version                  *)
+(***************************************************)
+
+scilla_version 0
+
+(***************************************************)
+(*               Associated library                *)
+(***************************************************)
+import ListUtils IntUtils
+
+library FabCar
+
+let one_msg =
+  fun (msg: Message) =>
+  let nil_msg = Nil {Message} in
+  Cons {Message} msg nil_msg
+
+let not_owner_code  = Uint32 1
+let create_car_code = Uint32 2
+let car_exists_code = Uint32 3
+let code_success = Uint32 4
+let query_failed_code = Uint32 5
+let car_not_found_code = Uint32 6
+
+(***************************************************)
+(*             The contract definition             *)
+(***************************************************)
+
+type Make = | Make of String
+type Model = | Model of String
+type Color = | Color of String
+type CarOwner = | CarOwner of ByStr20
+
+type Car = | Car of Make Model Color CarOwner
+
+contract FabCar
+(owner: ByStr20)
+
+field cars: Map String Car
+                = Emp String Car
+
+
+procedure createNewCar(new_car : Car, car_number : String)
+    tempcars <- cars;
+    (*Check if car with that number already exists*)
+    carExists = builtin contains tempcars car_number;
+    match carExists with
+      | True =>
+        msg = {_tag: "";
+                    _recipient: _sender;
+                    _amount: Uint128 0;
+                    code: car_exists_code
+        };
+        msgs = one_msg msg;
+        send msgs
+      | False =>
+        cars[car_number] := new_car;
+         msg = {_tag: ""; 
+                _recipient: _sender; 
+                _amount: Uint128 0; 
+                code: code_success};
+        msgs = one_msg msg;
+        send msgs 
+    end   
+end
+
+transition createCar(car_number: String, make: String, model: String, color: String, car_owner: ByStr20)
+  temp_make = Make make;
+  temp_model = Model model;
+  temp_color = Color color;
+  temp_owner = CarOwner car_owner;
+  
+  new_car = Car temp_make temp_model temp_color temp_owner;
+  createNewCar new_car car_number
+end
+
+
+transition getCar(car_number: String)
+  tempCars <- cars;
+  getValue = builtin get tempCars car_number;
+  match getValue with 
+    | Some v =>
+      e = {_eventname: "getCar"; msg: v};
+      event e
+    | None =>
+      msg = {_tag: ""; 
+                _recipient: _sender; 
+                _amount: Uint128 0; 
+                code: query_failed_code};
+      msgs = one_msg msg;
+      send msgs 
+  end
+end
+
+
+transition removeCar(car_number: String)
+    delete cars[car_number]
+end
+
+
+transition updateCar(car_number: String, make: String, model: String, color: String, car_owner: ByStr20)
+    tempcars <- cars;
+    exist = builtin contains tempcars car_number;
+    match exist with
+    | False =>
+        msg = {_tag: ""; 
+                _recipient: _sender; 
+                _amount: Uint128 0; 
+                code: car_not_found_code};
+        msgs = one_msg msg;
+        send msgs
+    | True =>
+        temp_make = Make make;
+        temp_model = Model model;
+        temp_color = Color color;
+        temp_owner = CarOwner car_owner;
+  
+        new_car = Car temp_make temp_model temp_color temp_owner;
+        
+        cars[car_number] := new_car;
+
+        msg = {_tag: ""; 
+                _recipient: _sender; 
+                _amount: Uint128 0; 
+                code: code_success};
+        msgs = one_msg msg;
+        send msgs
+    end
+
+
+end
+
+
+
