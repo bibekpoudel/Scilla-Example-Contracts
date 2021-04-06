@@ -1,0 +1,77 @@
+scilla_version 0
+
+(* TokenTransfer Contract *)
+(* Author: Bibek Poudel *)
+(* This example contract demonstrates how ZRC-2 token can be implemented in other contracts *)
+
+
+library TokenTransfer
+
+let one_msg =
+  fun (msg: Message) =>
+  let nil_msg = Nil {Message} in
+  Cons {Message} msg nil_msg
+
+let zero = Uint128 0 
+
+(* replace token_address with address of your token contract *)
+let token_address = 0x0000000000000000000000000000000000000000
+
+
+contract TokenTransfer
+(owner: ByStr20)
+
+transition TransferDemo(
+  receiver : ByStr20,
+  token_amount : Uint128
+  )
+  msg_to_token = {
+    _tag : "TransferFrom";
+    _recipient: token_address;
+    _amount: zero;
+    from: _sender;
+    to: receiver;
+    amount: token_amount
+  };
+  msgs = one_msg msg_to_token;
+  send msgs
+end
+
+transition WithdrawDemo(
+  address : ByStr20, 
+  token_amount : Uint128
+  )
+  msg_to_token =  {
+    _tag : "Transfer";
+    _recipient: token_address;
+    _amount: zero;
+    to: address;
+    amount: token_amount
+  };
+  msgs = one_msg msg_to_token;
+  send msgs
+end
+
+transition RecipientAcceptTransfer(
+  sender : ByStr20,
+  recipient : ByStr20,
+  amount : Uint128
+)
+end
+
+transition TransferFromSuccessCallBack(
+  initiator : ByStr20,
+  sender : ByStr20,
+  recipient : ByStr20,
+  amount : Uint128
+)
+end
+
+transition TransferSuccessCallBack(
+  sender : ByStr20,
+  recipient : ByStr20,
+  amount : Uint128
+)
+end
+
+
