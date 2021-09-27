@@ -1,0 +1,59 @@
+scilla_version 0
+
+import BoolUtils IntUtils ListUtils
+library ListExample
+
+let equal =
+  fun (a : String) =>
+  fun (b : String) =>
+    builtin eq a b
+    
+    
+let not_equal = fun (a: String) => fun(b: String)=>
+  let eq = builtin eq a b in
+  match eq with 
+    | True => False
+    | False => True
+  end
+
+  
+contract Fruits()
+
+field fruitBasket : List (String) = Nil {String}
+
+transition AddFruit (fruit_name: String)
+  fr <- fruitBasket;
+  new_list = Cons {String} fruit_name fr;
+  fruitBasket:= new_list
+end
+
+transition RemoveFruit(fruit_name: String)
+  fr <- fruitBasket;
+  f = not_equal fruit_name;
+  list_filter_String = @list_filter String;
+  new_list = list_filter_String f fr;
+  fruitBasket := new_list
+end
+
+transition CountFruits()
+  fr <- fruitBasket;
+  length_of_String = @list_length String;
+  length = length_of_String fr;
+  e = {_eventname: "Length: "; length : length};
+  event e
+end
+
+transition CheckFruitExists(fruit_name : String)
+  fr <- fruitBasket;
+  list_mem_String = @list_mem String;
+  check_result = list_mem_String equal fruit_name fr;
+  e = {_eventname: "Exists: "; result: check_result};
+  event e
+end
+
+transition AddManyFruits(fruits: List (String))
+  fr <- fruitBasket;
+  list_append_String = @list_append String;
+  new_list = list_append_String fruits fr;
+  fruitBasket := new_list
+end
